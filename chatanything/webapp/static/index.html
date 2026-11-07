@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ChatAnything 控制台</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">CA</span>
+        <div class="brand-text">
+          <h1>ChatAnything 控制台</h1>
+          <p class="subtitle">生命周期驱动的超级 Agent 控制台</p>
+        </div>
+        <div class="status" id="statusBadge" title="后端健康状态">
+          <span class="status-dot" id="healthDot"></span>
+          <span class="status-state" id="healthState">连接中…</span>
+          <span class="status-meta" id="healthMeta"></span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <a class="nav-link" data-view="chat" href="#chat">聊天</a>
+        <a class="nav-link" data-view="models" href="#models">模型</a>
+        <a class="nav-link" data-view="mcp" href="#mcp">MCP</a>
+        <a class="nav-link" data-view="skills" href="#skills">技能</a>
+        <a class="nav-link" data-view="tools" href="#tools">工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- 聊天（ChatGPT 风格） -->
+    <section class="view view-chat" id="view-chat" hidden>
+      <div class="chat-shell">
+        <aside class="chat-sidebar">
+          <div class="chat-sidebar-top">
+            <button class="btn primary chat-new" id="chatNew" type="button">＋ 新对话</button>
+            <button class="btn ghost small" id="sessionsRefresh" type="button" title="刷新会话列表">刷新</button>
+          </div>
+          <div class="chat-sidebar-scroll session-list" id="sessionList">
+            <p class="empty">加载中…</p>
+          </div>
+        </aside>
+
+        <section class="chat-main">
+          <header class="chat-main-head">
+            <div class="chat-main-title">
+              <h2 id="chatTitle">新对话</h2>
+              <p class="muted small" id="chatSubtitle">消息先经过 Router，再交由 Worker 处理。</p>
+            </div>
+            <span class="chat-status" id="chatStreamStatus">就绪</span>
+          </header>
+
+          <div class="chat-thread" id="chatThread">
+            <div class="chat-welcome" id="chatWelcome">
+              <div class="chat-welcome-mark" aria-hidden="true">CA</div>
+              <h3>今天想让 Agent 做什么？</h3>
+              <p class="muted">消息会经过 Router 路由，工具调用与上下文都会持久化到 SQLite。</p>
+              <div class="chat-suggestions">
+                <button class="chat-suggestion" type="button">请介绍一下这个服务的架构？</button>
+                <button class="chat-suggestion" type="button">帮我检查当前工作区文件结构</button>
+                <button class="chat-suggestion" type="button">实现一个 SSE 流式接口</button>
+              </div>
+            </div>
+          </div>
+
+          <footer class="chat-composer-wrap">
+            <form class="chat-composer" id="chatForm">
+              <textarea id="chatText" rows="1" placeholder="给 ChatAnything 发送消息…"></textarea>
+              <div class="chat-composer-bar">
+                <input id="chatThreadId" placeholder="thread_id（可选，留空自动分配）" autocomplete="off">
+                <button class="btn primary" id="chatSend" type="submit">发送</button>
+              </div>
+            </form>
+            <div class="chat-composer-meta" id="chatMeta" hidden></div>
+          </footer>
+        </section>
+      </div>
+    </section>
+
+    <!-- 模型 -->
+    <section class="view" id="view-models" hidden>
+      <div class="view-head">
+        <h2>模型配置</h2>
+        <p>管理模型后端、参数与默认模型。</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3 id="modelFormTitle">新建模型</h3>
+        </div>
+        <form id="modelForm" class="form-grid" autocomplete="off">
+          <input type="hidden" id="modelId">
+          <label class="field">
+            <span>名称 *</span>
+            <input id="modelName" required placeholder="例如：本地 Echo">
+          </label>
+          <label class="field">
+            <span>Provider</span>
+            <input id="modelProvider" placeholder="openai">
+          </label>
+          <label class="field">
+            <span>Model *</span>
+            <input id="modelModel" required placeholder="例如：gpt-4o-mini">
+          </label>
+          <label class="field">
+            <span>Base URL</span>
+            <input id="modelBaseUrl" placeholder="模型服务地址（可选）">
+          </label>
+          <label class="field">
+            <span>API Key</span>
+            <input id="modelApiKey" type="password" placeholder="sk-..." autocomplete="off">
+          </label>
+          <div class="field checkbox-field">
+            <label class="checkbox"><input type="checkbox" id="modelEnabled" checked><span>启用</span></label>
+            <label class="checkbox"><input type="checkbox" id="modelDefault"><span>设为默认</span></label>
+          </div>
+          <label class="field full">
+            <span>params（JSON 对象）</span>
+            <textarea id="modelParams" rows="3" placeholder="{}"></textarea>
+          </label>
+          <div class="form-actions full">
+            <button class="btn primary" id="modelSave" type="submit">保存</button>
+            <button class="btn ghost" id="modelReset" type="button">重置</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>模型列表</h3>
+          <button class="btn ghost small" id="modelsRefresh" type="button">刷新</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th><th>Provider</th><th>Model</th><th>启用</th><th>默认</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="modelTableBody">
+              <tr><td colspan="6" class="empty">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MCP -->
+    <section class="view" id="view-mcp" hidden>
+      <div class="view-head">
+        <h2>MCP Server</h2>
+        <p>管理 MCP 传输配置及其 tool / resource / prompt 条目。</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3 id="mcpFormTitle">新建 Server</h3>
+        </div>
+        <form id="mcpForm" class="form-grid" autocomplete="off">
+          <input type="hidden" id="mcpId">
+          <label class="field">
+            <span>名称 *</span>
+            <input id="mcpName" required placeholder="例如：local-mcp">
+          </label>
+          <label class="field">
+            <span>Transport</span>
+            <select id="mcpTransport">
+              <option value="stdio">stdio</option>
+              <option value="sse">sse</option>
+              <option value="http">http</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Command</span>
+            <input id="mcpCommand" placeholder="例如：python -m my_mcp">
+          </label>
+          <label class="field">
+            <span>URL</span>
+            <input id="mcpUrl" placeholder="MCP 服务地址（可选）">
+          </label>
+          <label class="field">
+            <span>args（JSON 数组）</span>
+            <textarea id="mcpArgs" rows="2" placeholder="[]"></textarea>
+          </label>
+          <label class="field">
+            <span>env（JSON 对象）</span>
+            <textarea id="mcpEnv" rows="2" placeholder="{}"></textarea>
+          </label>
+          <label class="field checkbox-field">
+            <label class="checkbox"><input type="checkbox" id="mcpEnabled" checked><span>启用</span></label>
+          </label>
+          <div class="form-actions full">
+            <button class="btn primary" id="mcpSave" type="submit">保存</button>
+            <button class="btn ghost" id="mcpReset" type="button">重置</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Server 列表</h3>
+          <button class="btn ghost small" id="mcpRefresh" type="button">刷新</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th><th>Transport</th><th>Command</th><th>URL</th><th>启用</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="mcpTableBody">
+              <tr><td colspan="6" class="empty">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="mcpEntriesCard">
+        <div class="card-head">
+          <h3>MCP 条目</h3>
+          <span class="muted small" id="mcpSelectedServer">未选择 Server</span>
+        </div>
+        <div id="mcpEntriesEmpty" class="empty">请在上方列表中选择一个 Server 查看条目</div>
+        <div id="mcpEntryFormWrap" hidden>
+          <form id="mcpEntryForm" class="form-grid" autocomplete="off">
+            <label class="field">
+              <span>kind</span>
+              <select id="entryKind">
+                <option value="tool">tool</option>
+                <option value="resource">resource</option>
+                <option value="prompt">prompt</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>名称 *</span>
+              <input id="entryName" required placeholder="条目名称">
+            </label>
+            <label class="field full">
+              <span>payload（JSON 对象）</span>
+              <textarea id="entryPayload" rows="3" placeholder="{}"></textarea>
+            </label>
+            <div class="form-actions full">
+              <button class="btn primary" id="entrySave" type="submit">保存条目</button>
+              <button class="btn ghost" id="entryReset" type="button">重置</button>
+            </div>
+          </form>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>类型</th><th>名称</th><th>Payload</th><th>更新时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="mcpEntriesBody">
+              <tr><td colspan="5" class="empty">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 技能 -->
+    <section class="view" id="view-skills" hidden>
+      <div class="view-head">
+        <h2>技能配置</h2>
+        <p>管理 Skill 的路径、版本、标签与元数据。</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3 id="skillFormTitle">新建 Skill</h3>
+        </div>
+        <form id="skillForm" class="form-grid" autocomplete="off">
+          <input type="hidden" id="skillId">
+          <label class="field">
+            <span>名称 *</span>
+            <input id="skillName" required placeholder="例如：web-search">
+          </label>
+          <label class="field">
+            <span>版本</span>
+            <input id="skillVersion" placeholder="1.0.0">
+          </label>
+          <label class="field">
+            <span>路径</span>
+            <input id="skillPath" placeholder="/path/to/skill">
+          </label>
+          <label class="field">
+            <span>tags（逗号分隔）</span>
+            <input id="skillTags" placeholder="检索, 编码">
+          </label>
+          <label class="field full">
+            <span>描述</span>
+            <textarea id="skillDescription" rows="2" placeholder="Skill 用途说明"></textarea>
+          </label>
+          <label class="field full">
+            <span>metadata（JSON 对象）</span>
+            <textarea id="skillMetadata" rows="3" placeholder="{}"></textarea>
+          </label>
+          <label class="field checkbox-field">
+            <label class="checkbox"><input type="checkbox" id="skillEnabled" checked><span>启用</span></label>
+          </label>
+          <div class="form-actions full">
+            <button class="btn primary" id="skillSave" type="submit">保存</button>
+            <button class="btn ghost" id="skillReset" type="button">重置</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3>Skill 列表</h3>
+          <button class="btn ghost small" id="skillsRefresh" type="button">刷新</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>名称</th><th>描述</th><th>路径</th><th>版本</th><th>启用</th><th>Tags</th><th>操作</th></tr>
+            </thead>
+            <tbody id="skillTableBody">
+              <tr><td colspan="7" class="empty">暂无数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 工具 -->
+    <section class="view" id="view-tools" hidden>
+      <div class="view-head">
+        <h2>工具调用</h2>
+        <p>通过统一工具接口执行 AI 编码工具，并查看返回结果。</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>统一调用</h3>
+          <button class="btn ghost small" id="toolsRefresh" type="button">刷新</button>
+        </div>
+        <p class="hint">该页面是 AI 编码的统一调用入口：<code>POST /api/tools/{name}/invoke</code>，请求体为 <code>{"arguments": {...}}</code>，可直接被外部 Agent 对接。</p>
+        <label class="field">
+          <span>工具</span>
+          <select id="toolSelect"></select>
+        </label>
+        <div class="tool-grid">
+          <div>
+            <h4>描述</h4>
+            <p class="muted" id="toolDescription">—</p>
+          </div>
+          <div>
+            <h4>参数 Schema</h4>
+            <pre class="code" id="toolParameters">—</pre>
+          </div>
+        </div>
+        <label class="field">
+          <span>arguments（JSON 对象）</span>
+          <textarea id="toolArguments" rows="4">{}</textarea>
+        </label>
+        <div class="actions">
+          <button class="btn primary" id="toolInvoke" type="button">执行</button>
+        </div>
+        <div class="result-box" id="toolResult" hidden>
+          <div class="result-line">
+            <span class="badge" id="toolStatus"></span>
+            <span class="muted">call_id：</span>
+            <code id="toolCallId"></code>
+          </div>
+          <pre class="code result-content" id="toolContent"></pre>
+          <div class="muted small" id="toolMetadata"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

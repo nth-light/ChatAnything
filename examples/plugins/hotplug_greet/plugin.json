@@ -1,0 +1,17 @@
+{
+  "name": "example.hotplug_greet",
+  "version": "1.0.0",
+  "entry": "plugin.py:GreetPlugin",
+  "description": "Hot-plug demo: registers a greeting tool at runtime.",
+  "author": "ChatAnything",
+  "provides": ["tool"],
+  "priority": 30,
+  "requires": [],
+  "api": ">=1.0,<2.0",
+  "python": ">=3.10",
+  "sandbox": {
+    "allow_network": false,
+    "allow_subprocess": false,
+    "max_hook_seconds": 10
+  }
+}

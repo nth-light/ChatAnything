@@ -1,0 +1,39 @@
+# Bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local state / logs
+*.log
+.state/
+*.db
+*.db-wal
+*.db-shm
+.chatanything/
+/.trae/
+/.trae-html-share-packages/
+/.screenshots/

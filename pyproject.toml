@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chatanything"
+version = "0.1.0"
+description = "A lifecycle-driven, everything-as-a-plugin Python harness for autonomous super-agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "ChatAnything Contributors" }]
+keywords = ["agent", "harness", "plugin", "lifecycle", "llm", "orchestration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "mypy>=1.8",
+    "ruff>=0.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/chatanything/chatanything"
+Repository = "https://github.com/chatanything/chatanything"
+Issues = "https://github.com/chatanything/chatanything/issues"
+
+[project.scripts]
+chatanything-web = "chatanything.webapp.__main__:main"
+
+[project.entry-points."chatanything.plugins"]
+# Third-party plugins can publish themselves here:
+# my_plugin = "my_package.my_module:MyPlugin"
+
+[tool.setuptools.packages.find]
+include = ["chatanything*"]
+
+[tool.setuptools.package-data]
+chatanything = ["py.typed", "webapp/static/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
